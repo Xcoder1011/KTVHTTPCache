@@ -66,5 +66,5 @@ AVPlayer * player = [AVPlayer playerWithURL:[NSURL URLWithString:URLString]]
 
 ### 最后
 
-- GitHub 地址：https://github.com/ChangbaDEV/KTVHTTPCache
+- GitHub 地址：https://github.com/ChangbaDevs/KTVHTTPCache
 - 如果遇到任何问题可以在 GitHub 提 Issue 给我。
