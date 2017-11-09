@@ -1,4 +1,8 @@
-## KTVHTTPCache - 音视频在线播放缓存框架
+# KTVHTTPCache
+
+
+
+## 项目介绍
 
 KTVHTTPCache 是一个处理 HTTP 网络缓存的框架。设计之初是为了解决音视频在线播放的缓存问题。但其应用场景不仅限于音视频在线播放，也可以用于图片加载、文件下载、普通网络请求等场景。
 
@@ -64,7 +68,53 @@ AVPlayer * player = [AVPlayer playerWithURL:[NSURL URLWithString:URLString]]
 ```
 
 
-### 最后
 
-- GitHub 地址：https://github.com/ChangbaDevs/KTVHTTPCache
-- 如果遇到任何问题可以在 GitHub 提 Issue 给我。
+## 唱吧的实践过程
+
+
+### 方案演进
+
+在音视频缓存上，我们一共采用过如下 4 个方案：
+
+1. AVPlayer 纯在线播放。
+1. AVPlayer + AVAssetResourceLoader + 下载模块。
+1. AVPlayer + 一个开源的缓存项目（同样基于 AVAssetResourceLoader + 下载模块）。
+1. AVPlayer + KTVHTTPCache。
+
+
+- 方案 1 简单直接，缺点也不必多说。
+- 方案 2 的下载模块设计的比较简单，只能顺序下载，不支持分片。导致只能 Seek 到已下载完的地方，在用户体验上会有较大的缺陷。
+- 方案 3 在功能上已经可以满足需求，但在使用中问题较多，我们在源码基础上做了很多修改来填坑。但稳定性依然不是很理想，上线不长时间就将该功能下掉了。
+- 方案 4 是唱吧现在的线上方案，目前在我们的使用场景中还没有发现问题。除稳定性的提升外，比较大的改进是增加了全路径的 Log 模块。若用户或测试同学遇到问题，只需简单描述并回传 Log，就可以快速定位到原因，大大提高了调试效率。
+
+
+### 踩过的坑
+
+#### 1. Content-Type 和 Path Extension
+
+AVPlay 在播放时会优先根据 Response Header 中的 Content-Type 判断当前资源是否可以播放。当 Content-Type 无法给出有效信息时再去判断 URL 中的 Path Extension。
+
+对应关系如下：
+
+URL | Content-Type | 是否可播
+---|---|---
+http://changba.com/video.mp4 | video/mp4 | YES
+http://changba.com/video.mp4 | application/octet-stream | YES
+http://changba.com/video | video/mp4 | YES
+http://changba.com/video | application/octet-stream | ==NO==
+
+因此要想让 AVPlayer 正常播放，Content-Type 和 Path Extension 中至少能提供一个有效信息，否则将直接报 Error。
+
+- 发现这一问题是因为在做 Original URL -> Proxy URL 映射时，将 Original URL 中的 Path Extension 信息在 URL Encode 时丢失了，再碰上某些情况 CDN 返回的 Content-Type 是 application/octet-stream 而不是 video/mp4 之类的确切类型时，AVPlayer 会直接报 Error。
+
+#### 2. 锁屏后 Server Socket 失效
+
+在本地 Server 中有一个 Socket 用于接收 AVPlayer 发出的请求。如果在 AVPlayer 为非播放状态时锁屏，一段时间后再唤起 App，FD 虽然还在，但 Listen 的端口会被回收，导致 FD 接收不到事件，AVPlayer 发出的请求也就无法被本地 Server 接收到。我们的解决办法是在做 URL 映射时 Ping 一下本地 Server，如果 Ping 不通，会重启本地 Server。
+
+
+
+## 最后
+
+项目已经开源，GitHub 地址： https://github.com/ChangbaDevs/KTVHTTPCache
+
+对重度影音类应用而言，音视频缓存属于比较重要的一环，对稳定性也有比较高的要求，我们在这上走过一些弯路、踩过一些坑。希望 KTVHTTPCache 的开源能给大家带来一些帮助。也非常欢迎大家在项目中使用，如果遇到问题可以在 GitHub 提 Issue 给我。
