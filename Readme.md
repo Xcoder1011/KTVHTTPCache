@@ -64,7 +64,7 @@ NSError * error;
 
 // 使用
 NSString * URLString = [KTVHTTPCache proxyURLStringWithOriginalURLString:@"原始 URL"];
-AVPlayer * player = [AVPlayer playerWithURL:[NSURL URLWithString:URLString]]
+AVPlayer * player = [AVPlayer playerWithURL:[NSURL URLWithString:URLString]];
 ```
 
 
