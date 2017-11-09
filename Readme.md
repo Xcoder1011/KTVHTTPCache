@@ -101,7 +101,7 @@ URL | Content-Type | 是否可播
 http://changba.com/video.mp4 | video/mp4 | YES
 http://changba.com/video.mp4 | application/octet-stream | YES
 http://changba.com/video | video/mp4 | YES
-http://changba.com/video | application/octet-stream | ==NO==
+http://changba.com/video | application/octet-stream | NO
 
 因此要想让 AVPlayer 正常播放，Content-Type 和 Path Extension 中至少能提供一个有效信息，否则将直接报 Error。
 
